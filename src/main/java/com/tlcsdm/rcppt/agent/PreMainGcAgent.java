@@ -2,6 +2,7 @@ package com.tlcsdm.rcppt.agent;
 
 import cn.hutool.core.thread.ThreadUtil;
 import cn.hutool.log.StaticLog;
+import javassist.*;
 import org.apache.commons.lang3.concurrent.BasicThreadFactory;
 
 import java.lang.instrument.ClassFileTransformer;
@@ -53,7 +54,20 @@ public class PreMainGcAgent {
 
         @Override
         public byte[] transform(ClassLoader loader, String className, Class<?> classBeingRedefined, ProtectionDomain protectionDomain, byte[] classfileBuffer) throws IllegalClassFormatException {
-            System.out.println("premain load Class:" + className);
+            //System.out.println("premain load Class:" + className);
+            if ("com/tlcsdm/smc/codeDev/DmaTriggerSourceCode".equals(className)) {
+                try {
+                    ClassPool pool = ClassPool.getDefault();
+                    CtClass ctClass = pool.get("com.tlcsdm.smc.codeDev.DmaTriggerSourceCode");
+                    CtField ctField = ctClass.getDeclaredField("test");
+                    ctClass.removeField(ctField);
+                    CtField f = CtField.make("private final String test = \"world\";", ctClass);
+                    ctClass.addField(f);
+                    ctClass.toClass();
+                } catch (NotFoundException | CannotCompileException e) {
+                    e.printStackTrace();
+                }
+            }
             return classfileBuffer;
         }
     }
